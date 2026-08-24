@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Azure Task Manager</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 700px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        .form {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+
+        input {
+            flex: 1;
+            padding: 10px;
+            font-size: 16px;
+        }
+
+        button {
+            padding: 10px 15px;
+            cursor: pointer;
+        }
+
+        li {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .completed {
+            text-decoration: line-through;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>Azure Task Manager</h1>
+
+    <div class="form">
+        <input
+            id="taskInput"
+            type="text"
+            placeholder="Enter a task..."
+        >
+
+        <button onclick="addTask()">
+            Add Task
+        </button>
+    </div>
+
+    <ul id="taskList"></ul>
+
+    <script>
+        const API_URL = "http://localhost:3000/api/tasks";
+
+        async function loadTasks() {
+            const response = await fetch(API_URL);
+            const tasks = await response.json();
+
+            const taskList = document.getElementById("taskList");
+
+            taskList.innerHTML = "";
+
+            tasks.forEach(task => {
+                const li = document.createElement("li");
+
+                li.innerHTML = `
+                    <span class="${task.completed ? "completed" : ""}">
+                        ${task.title}
+                    </span>
+
+                    <button onclick="deleteTask(${task.id})">
+                        Delete
+                    </button>
+                `;
+
+                taskList.appendChild(li);
+            });
+        }
+
+        async function addTask() {
+            const input = document.getElementById("taskInput");
+            const title = input.value.trim();
+
+            if (!title) {
+                alert("Please enter a task.");
+                return;
+            }
+
+            await fetch(API_URL, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    title: title
+                })
+            });
+
+            input.value = "";
+
+            loadTasks();
+        }
+
+        async function deleteTask(id) {
+            await fetch(`${API_URL}/${id}`, {
+                method: "DELETE"
+            });
+
+            loadTasks();
+        }
+
+        loadTasks();
+    </script>
+
+</body>
+</html>
