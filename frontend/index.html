@@ -1,132 +1,299 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Azure Task Manager</title>
+
+    <title>Cloud Task Manager</title>
 
     <style>
+        * {
+            box-sizing: border-box;
+        }
+
         body {
+            margin: 0;
             font-family: Arial, sans-serif;
-            max-width: 700px;
-            margin: 50px auto;
-            padding: 20px;
+            background: #f4f7fb;
+            color: #1f2937;
+        }
+
+        .container {
+            max-width: 750px;
+            margin: 60px auto;
+            padding: 30px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
         }
 
         h1 {
+            margin-bottom: 5px;
             text-align: center;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #6b7280;
+            margin-bottom: 30px;
         }
 
         .form {
             display: flex;
             gap: 10px;
-            margin-bottom: 30px;
+            margin-bottom: 25px;
         }
 
         input {
             flex: 1;
-            padding: 10px;
+            padding: 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
             font-size: 16px;
         }
 
-        button {
-            padding: 10px 15px;
+        .add-button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 6px;
             cursor: pointer;
+            background: #2563eb;
+            color: white;
+            font-weight: bold;
+        }
+
+        .add-button:hover {
+            background: #1d4ed8;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            color: #6b7280;
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
         }
 
         li {
             display: flex;
-            justify-content: space-between;
-            padding: 12px;
-            border-bottom: 1px solid #ddd;
+            align-items: center;
+            gap: 10px;
+            padding: 15px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .task-title {
+            flex: 1;
+            cursor: pointer;
         }
 
         .completed {
             text-decoration: line-through;
+            color: #9ca3af;
+        }
+
+        .delete-button {
+            border: none;
+            background: #ef4444;
+            color: white;
+            padding: 7px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .delete-button:hover {
+            background: #dc2626;
         }
     </style>
 </head>
 
 <body>
 
-    <h1>Azure Task Manager</h1>
+    <div class="container">
 
-    <div class="form">
-        <input
-            id="taskInput"
-            type="text"
-            placeholder="Enter a task..."
-        >
+        <h1>Cloud Task Manager</h1>
 
-        <button onclick="addTask()">
-            Add Task
-        </button>
+        <p></p>
+
+        <div class="form">
+
+            <input id="taskInput" type="text" placeholder="What needs to be done?">
+
+            <button class="add-button" onclick="addTask()">
+                Add Task
+            </button>
+
+        </div>
+
+        <div class="stats">
+
+            <span>
+                Total: <strong id="totalTasks">0</strong>
+            </span>
+
+            <span>
+                Completed: <strong id="completedTasks">0</strong>
+            </span>
+
+        </div>
+
+        <ul id="taskList"></ul>
+
     </div>
 
-    <ul id="taskList"></ul>
-
     <script>
+
         const API_URL = "http://localhost:3000/api/tasks";
 
+
+        // Load tasks
         async function loadTasks() {
+
             const response = await fetch(API_URL);
+
             const tasks = await response.json();
 
             const taskList = document.getElementById("taskList");
 
             taskList.innerHTML = "";
 
+
+            // Update statistics
+
+            const completedCount =
+                tasks.filter(task => task.completed).length;
+
+            document.getElementById("totalTasks").textContent =
+                tasks.length;
+
+            document.getElementById("completedTasks").textContent =
+                completedCount;
+
+
+            // Display tasks
+
             tasks.forEach(task => {
+
                 const li = document.createElement("li");
 
                 li.innerHTML = `
-                    <span class="${task.completed ? "completed" : ""}">
+
+                    <span
+                        class="task-title ${task.completed ? "completed" : ""}"
+                        onclick="toggleTask(${task.id}, ${task.completed})"
+                    >
+
+                        ${task.completed ? "✅" : "⬜"}
                         ${task.title}
+
                     </span>
 
-                    <button onclick="deleteTask(${task.id})">
+                    <button
+                        class="delete-button"
+                        onclick="deleteTask(${task.id})"
+                    >
                         Delete
                     </button>
+
                 `;
 
                 taskList.appendChild(li);
+
             });
+
         }
 
+
+        // Add task
         async function addTask() {
-            const input = document.getElementById("taskInput");
-            const title = input.value.trim();
+
+            const input =
+                document.getElementById("taskInput");
+
+            const title =
+                input.value.trim();
+
 
             if (!title) {
+
                 alert("Please enter a task.");
+
                 return;
+
             }
 
+
             await fetch(API_URL, {
+
                 method: "POST",
+
                 headers: {
                     "Content-Type": "application/json"
                 },
+
                 body: JSON.stringify({
                     title: title
                 })
+
             });
+
 
             input.value = "";
 
             loadTasks();
+
         }
 
-        async function deleteTask(id) {
+
+        // Complete/uncomplete task
+        async function toggleTask(id, completed) {
+
             await fetch(`${API_URL}/${id}`, {
-                method: "DELETE"
+
+                method: "PUT",
+
+                headers: {
+                    "Content-Type": "application/json"
+                },
+
+                body: JSON.stringify({
+                    completed: !completed
+                })
+
             });
 
+
             loadTasks();
+
         }
 
+
+        // Delete task
+        async function deleteTask(id) {
+
+            await fetch(`${API_URL}/${id}`, {
+
+                method: "DELETE"
+
+            });
+
+
+            loadTasks();
+
+        }
+
+
+        // Load tasks when page opens
         loadTasks();
+
     </script>
 
 </body>
+
 </html>
