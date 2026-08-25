@@ -165,10 +165,13 @@ app.delete("/api/tasks/:id", async (req, res) => {
     }
 });
 
-// Start server
+async function initializeApp() {
+    db = await initializeDatabase();
+}
+
 async function startServer() {
     try {
-        db = await initializeDatabase();
+        await initializeApp();
 
         app.listen(PORT, () => {
             console.log(`Server running on port ${PORT}`);
@@ -179,4 +182,11 @@ async function startServer() {
     }
 }
 
-startServer();
+if (require.main === module) {
+    startServer();
+}
+
+module.exports = {
+    app,
+    initializeApp
+};
